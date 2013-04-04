@@ -122,7 +122,8 @@ end
 
 -- Canny
 function opencv.Canny(...)
-   local _, source, percent, low_threshold, high_threshold, blursize, aperturesize = dok.unpack(
+   local _, source, percent, low_threshold, high_threshold, blursize, aperturesize
+      = dok.unpack(
       {...},
       'opencv.Canny',
       [[Implements the Canny algorithm for edge detection.
@@ -161,6 +162,58 @@ function opencv.Canny(...)
    local dest = torch.Tensor():resizeAs(img)
    low_threshold,high_threshold = img.libopencv.Canny(img,dest,low_threshold,high_threshold,blursize,aperturesize,percent)
    return dest,low_threshold,high_threshold
+end
+
+-- Canny
+function opencv.HoughLines2(...)
+   local _, source, method, rho, theta, threshold, param1, param2
+      = dok.unpack(
+      {...},
+      'opencv.HoughLines2',
+      [[Implements the Hough lines transform algorithm for line detection.
+            return Tensor of lines in format (x1, y1, x2, y2) for each line]],
+      {arg='source', type='torch.Tensor',
+       help='image in which to perform edge detection', req=true},
+      {arg='method',type='string',
+       help='options are "probabilistic", "standard", and "multiscale"',
+       default="probabilistic"},
+      {arg='rho',type='number',
+       help='Distance resolution of the accumulator in pixels', default=1},
+      {arg='theta',type='number',
+       help='Angle resolution of the accumulator in radians',default=3.14132/180},
+      {arg='threshold',type='number',
+       help='Accumulator threshold parameter. Only those lines are returned that get enough votes (> threshold)', default=30},
+      {arg='param1',type='number',
+       help='First method-dependent parameter\n' .. 
+	  '\t For the classical Hough transform, it is not used (0).\n' .. 
+	  '\t For the probabilistic Hough transform, it is the minimum line length.\n' .. 
+	  '\t For the multi-scale Hough transform, it is srn.', default=50},
+       {arg='param2',type='number',
+       help='Second method-dependent parameter \n' .. 
+	  '\tFor the classical Hough transform, it is not used (0).\n' .. 
+	  '\tFor the probabilistic Hough transform, it is the maximum gap between'
+	  ..  'line segments lying on the same line to treat them as a single' .. 
+	  'line segment (that is, to join them).\n' .. 
+	  '\tFor the multi-scale Hough transform, it is stn.', default=15}
+   )
+   local img = source
+   if source:size(1) == 3 then
+      print('WARNING: opencv.HoughLines2 converting image to grey')
+      img=image.rgb2y(source)
+   elseif source:size(1) ~= 1 then
+      xerror(' *** ERROR: opencv.HoughLines2 works only on RBG or grey img')
+   end
+   local dest = torch.Tensor(1,1) -- initialize a 2D Tensor for output
+   local method_num=1
+   if (method == 'probabilistic') then
+      method_num=1
+   elseif (method == 'standard') then
+      method_num = 0
+   else
+      method_num = 2
+   end
+   img.libopencv.HoughLines2(img, dest, method_num, rho, theta, threshold, param1, param2)
+   return dest
 end
 
 

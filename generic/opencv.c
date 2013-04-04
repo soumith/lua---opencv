@@ -441,6 +441,8 @@ static int libopencv_(Main_cvCornerHarris) (lua_State *L) {
   return 0;
 }
 
+
+
 //============================================================
 // OpticalFlow
 // Works on torch.Tensors (double). All the conversions are
@@ -1514,6 +1516,48 @@ static int libopencv_(Display)(lua_State* L) {
 }
 
 //============================================================
+// HoughTransform
+// Works on torch.Tensors (double). All the conversions are
+// done in C.
+//
+static int libopencv_(Main_cvHoughLines2)(lua_State *L) {
+  // Get Tensor's Info
+  THTensor * source = luaT_checkudata(L, 1, torch_Tensor);
+  THTensor * dest   = luaT_checkudata(L, 2, torch_Tensor);
+  int method = luaL_checkint(L, 3);
+  double rho = (double) luaL_checknumber(L, 4);
+  double theta = (double) luaL_checknumber(L, 5);
+  int threshold = luaL_checkint(L, 6);
+  double param1 = (double) luaL_checknumber(L, 7);
+  double param2 = (double) luaL_checknumber(L, 8);
+  /* first convert the tensors into proper opencv format */
+  IplImage * source_ipl = libopencv_(Main_torchimg2opencv_8U)(source);
+  CvMemStorage *storage = cvCreateMemStorage(0);
+  CvSeq *lines = 0;
+  lines = cvHoughLines2(source_ipl, storage, method,
+			  rho, theta, threshold, param1, param2);
+  // lines = cvHoughLines2(source_ipl, storage, CV_HOUGH_PROBABILISTIC,
+  // 1, CV_PI/180.0, 30, 50, 15);
+  
+  // resize the destination tensor to be [lines x 4] i.e. x1, y1, x2, y2
+  THTensor_(resize2d)(dest, lines->total, 4);
+  THTensor *tensor = THTensor_(newContiguous)(dest);
+  real *tensor_data = THTensor_(data)(tensor);
+  int i;
+  for( i = 0; i < lines->total; i++ ) {
+    CvPoint* line = (CvPoint*) cvGetSeqElem(lines,i);
+    *tensor_data++ = (real)line[0].x;
+    *tensor_data++ = (real)line[0].y;
+    *tensor_data++ = (real)line[1].x;
+    *tensor_data++ = (real)line[1].y;
+  }
+  THTensor_(free)(tensor);
+  cvReleaseMemStorage(&storage);
+  cvReleaseImageHeader(&source_ipl); 
+  return 0;
+}
+
+//============================================================
 // Register functions in LUA
 //
 static const luaL_reg libopencv_(Main__) [] =
@@ -1537,6 +1581,7 @@ static const luaL_reg libopencv_(Main__) [] =
   {"videoGetFrame",        libopencv_(Main_cvGetFrame)},
   {"videoWriteFrame",      libopencv_(Main_cvWriteFrame)},
   {"display",              libopencv_(Display)},
+  {"HoughLines2",          libopencv_(Main_cvHoughLines2)},
   {NULL, NULL}  /* sentinel */
 };
 
