@@ -19,9 +19,11 @@
  + opencv.GoodFeaturesToTrack [lua]   --> cvGoodFeaturesToTrack [C/C++]
  + opencv.DrawFlowlinesOnImage [lua]  --> cvDrawFlowlinesOnImage [C/C++]
  + opencv.smoothVoronoi [lua] --> uses Voronoi triangulation to create dense map of a sparse set of points.
+ + opencv.HoughLines2() [lua] --> cvHoughLines2 [C/C++]
 
 ## who
 
  + Original wrapper: Clement Farabet.
  + Additional functions: GoodFeatures...(),PLK,etc.: Marco Scoffier
+ + More functions and bug fixes: Soumith Chintala
  + Adapted for torch7: Marco Scoffier
